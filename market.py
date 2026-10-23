@@ -1,4 +1,5 @@
 import random
+random.seed(42)  # for reproducibility
 # RumorMill - Milestone 1: the market board
 
 stock_price = 100  # whole numbers for now (see note below)
