@@ -1,3 +1,4 @@
+import random
 # RumorMill - Milestone 1: the market board
 
 stock_price = 100  # whole numbers for now (see note below)
@@ -70,6 +71,11 @@ for day in range(1, 4):
     shares_bought = 0
     shares_sold = 0
 
+    for trader in trader_list:
+            action = random.choice (["buy", "sell", "hold"])
+            amount = random.randint(1, 5)
+            print(f"{trader['name']} wants to {action} {amount} shares")
+
     # Traders - only count the ones that actually trade
     if day == 1:
         if buy_shares(alice, stock_price, 3):
@@ -91,10 +97,12 @@ for day in range(1, 4):
 
 
     print(f"\nEnd of day {day}: net demand {net_demand}, new price {stock_price}")
-    
-    for trader in trader_list:
-        show_trader(trader)
+
+    for trader in trader_list:          
+        show_trader(trader)             
+
 
 print(f"\nFinal price: {stock_price}")
 for trader in trader_list:
     print(f"{trader['name']}'s net worth: {net_worth(trader, stock_price)}")
+    
