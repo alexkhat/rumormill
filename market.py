@@ -4,6 +4,8 @@ stock_price = 100  # whole numbers for now (see note below)
 
 alice = {"name": "Alice", "cash": 1000, "shares": 0}
 bob = {"name": "Bob", "cash": 1000, "shares": 0}
+carol = {"name": "Carol", "cash": 1000, "shares": 0}
+trader_list = [alice, bob, carol]
 
 
 def buy_shares(investor, price, shares):
@@ -89,9 +91,10 @@ for day in range(1, 4):
 
 
     print(f"\nEnd of day {day}: net demand {net_demand}, new price {stock_price}")
-    show_trader(alice)  
-    show_trader(bob)
+    
+    for trader in trader_list:
+        show_trader(trader)
 
 print(f"\nFinal price: {stock_price}")
-print(f"Alice's net worth: {net_worth(alice, stock_price)}")
-print(f"Bob's net worth: {net_worth(bob, stock_price)}")
+for trader in trader_list:
+    print(f"{trader['name']}'s net worth: {net_worth(trader, stock_price)}")
