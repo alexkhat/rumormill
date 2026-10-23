@@ -77,16 +77,14 @@ for day in range(1, 4):
             amount = random.randint(1, 5)
             print(f"{trader['name']} wants to {action} {amount} shares")
 
-    # Traders - only count the ones that actually trade
-    if day == 1:
-        if buy_shares(alice, stock_price, 3):
-            shares_bought += 3
-    elif day == 2:
-        if buy_shares(bob, stock_price, 2):
-            shares_bought += 2
-    else:
-        if sell_shares(alice, stock_price, 1):
-            shares_sold += 1
+            if action == "buy":
+               if buy_shares(trader, stock_price, amount):
+                  shares_bought += amount
+            elif action == "sell":
+                if sell_shares(trader, stock_price, amount):
+                       shares_sold += amount
+            else:
+                  print(f"{trader['name']} holds and does nothing.")
 
     # Move the price
     net_demand = shares_bought - shares_sold
