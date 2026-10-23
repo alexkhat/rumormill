@@ -1,43 +1,82 @@
 # RumorMill
 
-A multi-agent stock market simulation for studying how AI agents react to fake news.
+A multi-agent stock market where AI traders read the news, talk on a shared forum,
+and trade. One of them is lying.
 
-## What is this?
+## The idea
 
-RumorMill is a pretend stock market that runs on your computer. Traders buy and sell
-shares, and the share price moves up or down depending on how much buying and selling
-happens each day.
+AI agents are starting to read information and act on it. RumorMill tests how easily
+they can be manipulated.
 
-The long-term plan is to replace the traders with AI agents, then add one dishonest
-agent that spreads fake news, and measure who gets fooled.
+The market is full of AI investors. Each day they read the news and the forum, then
+decide to buy, sell or hold. One agent is a manipulator: it posts fake news and
+rumours to push the price in its favour.
 
-## Why?
+Every experiment runs twice, once with the manipulator and once without, using the
+same seed so the only difference is the liar. Then the results are compared:
 
-AI agents are starting to read information and act on it in the real world. If a single
-fake post can trick an AI agent into a bad decision, that is a real security problem.
-This project is built to measure that risk, and to test ways of defending against it.
+- How far does the price move away from where it should be?
+- Which traders get fooled, and which ones don't?
+- Do traders start copying each other and panic together?
+- Does adding a fact-checking agent reduce the damage?
 
-## Current status: Milestone 1 (market engine)
+## How it works
 
-What works right now:
+    News + Forum  ->  AI traders decide  ->  Market applies the rules  ->  Results saved
+         ^                                                                      |
+         +------------------------------ next day <-----------------------------+
 
-- Traders with cash and shares
-- Buying and selling shares
-- Rules that reject bad trades (not enough cash, not enough shares, zero or negative amounts)
-- A share price that rises with buying and falls with selling, with a minimum price of 1
-- Net worth calculation (cash + shares × price) to see who is winning
+**The market** is plain Python with no AI. It holds prices, cash and shares, and
+enforces the rules: no spending money you don't have, no selling shares you don't own.
 
-## Roadmap
+**The traders** are AI agents in three tiers, each running a different model size:
 
-1. **Market engine** - done
-2. **Random traders**: more traders who decide for themselves each day
-3. **AI traders**: traders powered by a large language model (IFM K2 Horizon)
-4. **The rumour experiment**: a fake-news agent, a fact-checker, and results comparing both
-5. **Cloud**: running the simulation on AWS
+| Tier | Model | Role |
+|---|---|---|
+| Retail | K2 Horizon 0.9B | Simple investors, easy to influence |
+| Informed | K2 Horizon 7B | More careful investors |
+| Institutional | K2 Horizon 375B | Few, well-informed investors |
 
-## How to run
+**The manipulator** posts fake headlines and rumours to the forum.
+
+**The fact-checker** reviews forum posts and flags ones that look false.
+
+## Engineering
+
+- **Reproducible runs:** fixed random seeds, and every AI call is recorded so any run can be replayed exactly
+- **Structured AI output:** every decision is validated against a schema before it touches the market
+- **Crash recovery:** progress is saved after each day, so a long run can resume where it stopped
+- **Rate-limit handling:** waits and retries on API limits instead of crashing
+- **Tracing:** every agent's input, reasoning and decision can be inspected
+- **Tested rules:** automated tests check that cash and shares always add up
+
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| Language | Python |
+| AI models | IFM K2 Horizon (OpenAI-compatible API) |
+| Agent orchestration | LangGraph |
+| Tracing and evaluation | LangSmith |
+| Output validation | Pydantic |
+| Testing | pytest |
+| Analysis and charts | pandas, matplotlib |
+| Cloud | AWS Lambda, Step Functions, DynamoDB, S3, Secrets Manager |
+| Infrastructure | AWS SAM |
+| CI | GitHub Actions |
+| Querying results | MCP server |
+
+## Status
+
+- [x] Market engine: trading rules, price movement, net worth, reproducible runs
+- [x] Traders that decide for themselves each day
+- [ ] AI traders
+- [ ] Manipulator and fact-checker
+- [ ] Experiment runs and results
+- [ ] AWS deployment
+
+## Run it
 
 Requires Python 3.
 
     py market.py
-
