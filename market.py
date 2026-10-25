@@ -54,6 +54,11 @@ def net_worth(investor, price):
     """Calculate the net worth of an investor."""
     return investor["cash"] + investor["shares"] * price
 
+def decide(trader, price):
+    """Decide what a trader wants to do: Returns (action, amount)"""
+    action = random.choice(["buy", "sell", "hold"])
+    amount = random.randint(1, 5)
+    return action, amount
 
 print("RumorMill market is starting...")
 
@@ -73,8 +78,7 @@ for day in range(1, 4):
     shares_sold = 0
 
     for trader in trader_list:
-            action = random.choice (["buy", "sell", "hold"])
-            amount = random.randint(1, 5)
+            action, amount = decide(trader, stock_price)
             print(f"{trader['name']} wants to {action} {amount} shares")
 
             if action == "buy":
