@@ -70,11 +70,14 @@ enforces the rules: no spending money you don't have, no selling shares you don'
 
 - [x] Market engine: trading rules, price movement, net worth, reproducible runs
 - [x] Traders that decide for themselves each day
-- [ ] AI traders
+- [x] First AI trader: Alice trades using IFM K2 Horizon, Bob and Carol trade randomly
+- [x] AI replies validated before reaching the market (invalid replies become "hold")
+- [ ] Record and replay AI calls
+- [ ] Retry with feedback and rate-limit handling
+- [ ] All traders run by AI, in three model tiers
 - [ ] Manipulator and fact-checker
 - [ ] Experiment runs and results
 - [ ] AWS deployment
-
 ## Run it
 
 Requires Python 3.
