@@ -2,14 +2,14 @@
 
 import random
 from market import buy_shares, sell_shares, show_trader, net_worth, decide
-
+from ai_client import ai_decide
 random.seed(42)  # for reproducibility
 
 stock_price = 100
 
-alice = {"name": "Alice", "cash": 1000, "shares": 0}
-bob = {"name": "Bob", "cash": 1000, "shares": 0}
-carol = {"name": "Carol", "cash": 1000, "shares": 0}
+alice = {"name": "Alice", "cash": 1000, "shares": 0, "brain": "ai"}  # Alice will use the AI to make decisions
+bob = {"name": "Bob", "cash": 1000, "shares": 0, "brain": "random"}  # Bob will make random decisions
+carol = {"name": "Carol", "cash": 1000, "shares": 0, "brain": "random"}
 trader_list = [alice, bob, carol]
 
 print("RumorMill market is starting...")
@@ -30,7 +30,10 @@ for day in range(1, 4):
     shares_sold = 0
 
     for trader in trader_list:
-        action, amount = decide(trader, stock_price)
+        if trader['brain'] == 'ai':
+            action, amount = ai_decide(trader, stock_price)
+        else:
+            action, amount = decide(trader, stock_price)
         print(f"{trader['name']} wants to {action} {amount} shares")
 
         if action == "buy":
