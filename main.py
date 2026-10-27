@@ -1,8 +1,8 @@
 # RumorMill - runs the simulation
-
+import json
 import random
 from market import buy_shares, sell_shares, show_trader, net_worth, decide
-from ai_client import ai_decide
+from ai_client import ai_decide, recorded_calls
 random.seed(42)  # for reproducibility
 
 stock_price = 100
@@ -59,3 +59,7 @@ for day in range(1, 4):
 print(f"\nFinal price: {stock_price}")
 for trader in trader_list:
     print(f"{trader['name']}'s net worth: {net_worth(trader, stock_price)}")
+
+    with open("recording.json", "w") as f:
+         json.dump(recorded_calls, f, indent=2)
+print(f"\nSaved {len(recorded_calls)} AI calls to recording.json")

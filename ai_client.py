@@ -1,6 +1,7 @@
 #First test of the IFM API
 import json
 import os
+from urllib import response
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -30,6 +31,9 @@ client = OpenAI(
     api_key=os.getenv("IFM_API_KEY"), 
     base_url=os.getenv("IFM_BASE_URL")
 )
+
+recorded_calls = []  # every AI call made during this run
+
 def ai_decide(trader, price):
     """Ask the AI what this trader should do. Returns (action, amount)."""
     prompt = (
@@ -47,8 +51,11 @@ def ai_decide(trader, price):
 
     reply = response.choices[0].message.content
     print(f"  [AI raw reply for {trader['name']}: {reply.strip()}]")
-    return parse_decision(reply)
 
-if __name__ == "__main__":
-    test_trader = {"name": "Alice", "cash": 500, "shares": 4}
-    print(ai_decide(test_trader, 120))
+    recorded_calls.append({
+        "trader": trader["name"],
+        "prompt": prompt,
+        "reply": reply.strip(),
+    })
+
+    return parse_decision(reply)
