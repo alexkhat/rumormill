@@ -1,41 +1,45 @@
-#First test of the IFM API
+# RumorMill - AI connection: asks the model for trading decisions, with record/replay
+
 import json
 import os
-from urllib import response
 from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv() # Load environment variables from .env file
+load_dotenv()  # load IFM_API_KEY, IFM_BASE_URL and IFM_MODEL from .env
+
+
 def parse_decision(text):
-    """Turn the AI's reply into (action, amount). Falls back to hold if anything is wrong."""
+    """Check the AI's reply. Returns ((action, amount), None) if valid, or (None, reason) if not."""
     try:
         data = json.loads(text.strip())
     except json.JSONDecodeError:
-        print("WARNING: reply was not valid JSON:", repr(text))
-        return "hold", 0
+        return None, "Your reply was not valid JSON."
+
+    if not isinstance(data, dict):
+        return None, 'Your reply must be a JSON object like {"action": ..., "amount": ...}.'
 
     action = data.get("action")
     amount = data.get("amount")
 
     if action not in ["buy", "sell", "hold"]:
-        print("WARNING: invalid action:", repr(action))
-        return "hold", 0
+        return None, f'action must be exactly "buy", "sell" or "hold", not {action!r}.'
 
-    if not isinstance(amount, int) or amount < 1 or amount > 5:
-        print("WARNING: invalid amount:", repr(amount))
-        return "hold", 0
+    if isinstance(amount, bool) or not isinstance(amount, int) or not 1 <= amount <= 5:
+        return None, f"amount must be a whole number from 1 to 5, not {amount!r}."
 
-    return action, amount
+    return (action, amount), None
+
 
 client = OpenAI(
-    api_key=os.getenv("IFM_API_KEY"), 
-    base_url=os.getenv("IFM_BASE_URL")
+    api_key=os.getenv("IFM_API_KEY"),
+    base_url=os.getenv("IFM_BASE_URL"),
 )
 
 recorded_calls = []  # every AI call made during this run
 
 replay_mode = False
-replay_queue = []
+replay_queue = []  # recorded calls waiting to be replayed, in order
+
 
 def start_replay(filename):
     """Switch to replay mode using a saved recording."""
@@ -77,4 +81,8 @@ def ai_decide(trader, price):
 
     print(f"  [AI reply for {trader['name']}: {reply}]")
 
-    return parse_decision(reply)
+    decision, error = parse_decision(reply)
+    if error:
+        print(f"  WARNING: invalid AI reply for {trader['name']}: {error}")
+        return "hold", 0
+    return decision
