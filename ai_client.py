@@ -1,4 +1,4 @@
-# RumorMill - AI connection: asks the model for trading decisions, with record/replay
+# RumorMill - AI connection: asks the model for trading decisions, with retry and record/replay
 
 import json
 import os
@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()  # load IFM_API_KEY, IFM_BASE_URL and IFM_MODEL from .env
+
+MAX_ATTEMPTS = 3  # first try + 2 retries
 
 
 def parse_decision(text):
@@ -30,6 +32,22 @@ def parse_decision(text):
     return (action, amount), None
 
 
+def build_prompt(trader, price):
+    """The first message the AI sees for this trader today."""
+    return (
+        f"You are {trader['name']}, a stock trader. "
+        f"You have {trader['cash']} cash and {trader['shares']} shares. "
+        f"The share price is {price}. Decide what to do today. "
+        'Reply ONLY with JSON in this format: {"action": "<buy|sell|hold>", "amount": <whole number 1-5>} '
+        "No other text."
+    )
+
+
+def feedback_message(error):
+    """What we tell the AI after an invalid reply."""
+    return f"That reply was invalid: {error} Reply again with ONLY the JSON."
+
+
 client = OpenAI(
     api_key=os.getenv("IFM_API_KEY"),
     base_url=os.getenv("IFM_BASE_URL"),
@@ -50,39 +68,44 @@ def start_replay(filename):
     print(f"Replaying {len(replay_queue)} AI calls from {filename}")
 
 
-def ai_decide(trader, price):
-    """Ask the AI what this trader should do. Returns (action, amount)."""
-    prompt = (
-        f"You are {trader['name']}, a stock trader. "
-        f"You have {trader['cash']} cash and {trader['shares']} shares. "
-        f"The share price is {price}. Decide what to do today. "
-        'Reply ONLY with JSON in this format: {"action": "<buy|sell|hold>", "amount": <whole number 1-5>} '
-        "No other text."
-    )
-
+def get_reply(trader, messages):
+    """One AI reply for this conversation: from the recording in replay mode, otherwise from the API."""
     if replay_mode:
         if not replay_queue:
             raise RuntimeError("Replay ran out of recorded AI calls")
         record = replay_queue.pop(0)
-        if record["prompt"] != prompt:
-            raise RuntimeError(f"Replay mismatch for {trader['name']}: prompt differs from the recording")
-        reply = record["reply"]
-    else:
-        response = client.chat.completions.create(
-            model=os.getenv("IFM_MODEL"),
-            messages=[{"role": "user", "content": prompt}],
-        )
-        reply = response.choices[0].message.content.strip()
-        recorded_calls.append({
-            "trader": trader["name"],
-            "prompt": prompt,
-            "reply": reply,
-        })
+        if record["messages"] != messages:
+            raise RuntimeError(f"Replay mismatch for {trader['name']}: conversation differs from the recording")
+        return record["reply"]
 
-    print(f"  [AI reply for {trader['name']}: {reply}]")
+    response = client.chat.completions.create(
+        model=os.getenv("IFM_MODEL"),
+        messages=messages,
+    )
+    reply = response.choices[0].message.content.strip()
+    recorded_calls.append({
+        "trader": trader["name"],
+        "messages": list(messages),  # a COPY - the conversation keeps growing after this
+        "reply": reply,
+    })
+    return reply
 
-    decision, error = parse_decision(reply)
-    if error:
-        print(f"  WARNING: invalid AI reply for {trader['name']}: {error}")
-        return "hold", 0
-    return decision
+
+def ai_decide(trader, price):
+    """Ask the AI what this trader should do, retrying with feedback. Returns (action, amount)."""
+    messages = [{"role": "user", "content": build_prompt(trader, price)}]
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        reply = get_reply(trader, messages)
+        print(f"  [AI reply for {trader['name']}, attempt {attempt}: {reply}]")
+
+        decision, error = parse_decision(reply)
+        if error is None:
+            return decision
+
+        print(f"  WARNING: {error}")
+        messages.append({"role": "assistant", "content": reply})
+        messages.append({"role": "user", "content": feedback_message(error)})
+
+    print(f"  GAVE UP after {MAX_ATTEMPTS} attempts: {trader['name']} holds.")
+    return "hold", 0
