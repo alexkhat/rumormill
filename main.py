@@ -6,17 +6,29 @@ import sys
 from market import buy_shares, sell_shares, show_trader, net_worth, decide
 from ai_client import ai_decide, recorded_calls, start_replay
 
-random.seed(42)  # for reproducibility
+SEED = 42  
 
 REPLAY = "replay" in sys.argv
 if REPLAY:
     start_replay("recording.json")
 
+
+def make_trader(name, brain):
+    """A new trader with 1000 cash, no shares, and their own random generator."""
+    return {
+        "name": name,
+        "cash": 1000,
+        "shares": 0,
+        "brain": brain,
+        "rng": random.Random(f"{SEED}-{name}"),
+    }
+
+
 stock_price = 100
 
-alice = {"name": "Alice", "cash": 1000, "shares": 0, "brain": "ai"}
-bob = {"name": "Bob", "cash": 1000, "shares": 0, "brain": "random"}
-carol = {"name": "Carol", "cash": 1000, "shares": 0, "brain": "random"}
+alice = make_trader("Alice", "ai")
+bob = make_trader("Bob", "random")
+carol = make_trader("Carol", "random")
 trader_list = [alice, bob, carol]
 
 print("RumorMill market is starting...")
