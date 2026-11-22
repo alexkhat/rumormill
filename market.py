@@ -1,7 +1,5 @@
 # RumorMill - market rules
 
-import random
-
 
 def buy_shares(investor, price, shares):
     """Try to buy shares. Returns True if the trade happened, False if it was refused."""
@@ -48,7 +46,8 @@ def net_worth(investor, price):
 
 
 def decide(trader, price):
-    """Decide what a trader wants to do. Returns (action, amount)."""
-    action = random.choice(["buy", "sell", "hold"])
-    amount = random.randint(1, 5)
+    """Random decision using this trader's OWN random generator. Returns (action, amount)."""
+    rng = trader["rng"]
+    action = rng.choice(["buy", "sell", "hold"])
+    amount = rng.randint(1, 5)
     return action, amount
